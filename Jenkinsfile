@@ -60,7 +60,7 @@ pipeline {
                         /opt/sonar-scanner/bin/sonar-scanner \
                             -Dsonar.projectKey=webapp \
                             -Dsonar.sources=. \
-                            -Dsonar.host.url=http://localhost:9000 \
+                            -Dsonar.host.url=http://192.168.79.129:9000 \
                             -Dsonar.login=admin \
                             -Dsonar.password=admin || true
                         echo "Code quality analysis completed"
