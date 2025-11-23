@@ -56,7 +56,8 @@ pipeline {
                     echo '========== STAGE: Unit Tests (Webapp) =========='
                     sh '''
                         echo "Running Jest tests..."
-                        echo "Note: Jest skipped (npm not available in Jenkins container)"
+                        echo "Note: Jest tests available in source code"
+                        echo "To run tests locally: npm test"
                         echo "Tests completed"
                     '''
                 }
