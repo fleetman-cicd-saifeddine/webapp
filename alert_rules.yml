@@ -1,0 +1,205 @@
+groups:
+  - name: jenkins_alerts
+    interval: 30s
+    rules:
+      # Jenkins build failure alert
+      - alert: JenkinsBuildFailure
+        expr: jenkins_builds_failed_total > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Jenkins build failed"
+          description: "Jenkins build has failed. Check Jenkins dashboard immediately."
+
+      # Jenkins high queue
+      - alert: JenkinsHighQueue
+        expr: jenkins_queue_size > 10
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Jenkins queue is high"
+          description: "Jenkins has {{ $value }} jobs in queue. Consider scaling agents."
+
+      # Jenkins executor usage
+      - alert: JenkinsHighExecutorUsage
+        expr: (jenkins_executors_busy / jenkins_executors_total) > 0.9
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Jenkins executor usage is high"
+          description: "Jenkins executors are {{ $value | humanizePercentage }} utilized."
+
+      # Jenkins disk space
+      - alert: JenkinsDiskSpaceLow
+        expr: node_filesystem_avail_bytes{mountpoint="/var/jenkins_home"} < 5368709120
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Jenkins disk space is low"
+          description: "Jenkins has less than 5GB disk space available."
+
+  - name: sonarqube_alerts
+    interval: 30s
+    rules:
+      # SonarQube quality gate failure
+      - alert: SonarQubeQualityGateFailed
+        expr: sonarqube_quality_gate_status == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "SonarQube quality gate failed"
+          description: "Project {{ $labels.project }} failed quality gate."
+
+      # SonarQube high technical debt
+      - alert: SonarQubeTechnicalDebtHigh
+        expr: sonarqube_technical_debt_minutes > 1440
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "SonarQube technical debt is high"
+          description: "Project has {{ $value }} minutes of technical debt."
+
+      # SonarQube security issues
+      - alert: SonarQubeSecurityIssues
+        expr: sonarqube_security_issues > 5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "SonarQube detected security issues"
+          description: "Project has {{ $value }} security issues."
+
+      # SonarQube code coverage low
+      - alert: SonarQubeLowCoverage
+        expr: sonarqube_coverage_percentage < 50
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "SonarQube code coverage is low"
+          description: "Project coverage is {{ $value }}%. Target is 80%."
+
+  - name: kubernetes_alerts
+    interval: 30s
+    rules:
+      # Pod restart alert
+      - alert: KubernetesPodRestarting
+        expr: rate(kube_pod_container_status_restarts_total[15m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Kubernetes pod is restarting"
+          description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is restarting frequently."
+
+      # Pod not ready
+      - alert: KubernetesPodNotReady
+        expr: min by (namespace, pod) (kube_pod_status_phase{phase=~"Pending|Unknown"}) == 1
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Kubernetes pod is not ready"
+          description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is not ready."
+
+      # Node not ready
+      - alert: KubernetesNodeNotReady
+        expr: kube_node_status_condition{condition="Ready",status="true"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Kubernetes node is not ready"
+          description: "Node {{ $labels.node }} is not ready."
+
+      # High memory usage
+      - alert: KubernetesHighMemoryUsage
+        expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) > 0.9
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container memory usage is high"
+          description: "Container {{ $labels.container_name }} memory usage is {{ $value | humanizePercentage }}."
+
+  - name: application_alerts
+    interval: 30s
+    rules:
+      # High error rate
+      - alert: HighErrorRate
+        expr: (rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }}. Check application logs."
+
+      # High latency
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High latency detected"
+          description: "95th percentile latency is {{ $value }}s."
+
+      # Service down
+      - alert: ServiceDown
+        expr: up{job="webapp"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service is down"
+          description: "Service {{ $labels.job }} is not responding."
+
+  - name: infrastructure_alerts
+    interval: 30s
+    rules:
+      # High CPU usage
+      - alert: HighCPUUsage
+        expr: (100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 80
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage on {{ $labels.instance }} is {{ $value }}%."
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: ((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes) * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage on {{ $labels.instance }} is {{ $value }}%."
+
+      # Disk space low
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 10
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Disk space is low"
+          description: "Disk space on {{ $labels.instance }} is {{ $value }}% available."
+
+      # Network errors
+      - alert: HighNetworkErrors
+        expr: rate(node_network_receive_errs_total[5m]) > 100
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High network errors"
+          description: "Network errors on {{ $labels.instance }} are {{ $value }} per second."

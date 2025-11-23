@@ -1,0 +1,59 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'devops-pipeline'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+# Load rules once and periodically evaluate them
+rule_files:
+  - "alert_rules.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Jenkins metrics
+  - job_name: 'jenkins'
+    static_configs:
+      - targets: ['localhost:8080']
+    metrics_path: '/prometheus'
+    scrape_interval: 10s
+
+  # SonarQube metrics
+  - job_name: 'sonarqube'
+    static_configs:
+      - targets: ['192.168.79.129:9000']
+    metrics_path: '/api/ce/activity'
+    scrape_interval: 30s
+
+  # Kubernetes metrics
+  - job_name: 'kubernetes'
+    static_configs:
+      - targets: ['localhost:10250']
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
+    scrape_interval: 15s
+
+  # Docker metrics
+  - job_name: 'docker'
+    static_configs:
+      - targets: ['localhost:9323']
+    scrape_interval: 15s
+
+  # Application metrics
+  - job_name: 'webapp'
+    static_configs:
+      - targets: ['192.168.79.129:30080']
+    scrape_interval: 10s
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 15s

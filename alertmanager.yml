@@ -1,0 +1,117 @@
+global:
+  resolve_timeout: 5m
+  slack_api_url: 'YOUR_SLACK_WEBHOOK_URL'
+
+route:
+  receiver: 'default'
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+  routes:
+    # Critical alerts - immediate notification
+    - match:
+        severity: critical
+      receiver: 'critical'
+      group_wait: 0s
+      repeat_interval: 1h
+
+    # Warning alerts - batch notifications
+    - match:
+        severity: warning
+      receiver: 'warning'
+      group_wait: 30s
+      repeat_interval: 4h
+
+    # Jenkins alerts
+    - match:
+        alertname: JenkinsBuildFailure
+      receiver: 'jenkins'
+      repeat_interval: 2h
+
+    # SonarQube alerts
+    - match:
+        alertname: SonarQubeQualityGateFailed
+      receiver: 'sonarqube'
+      repeat_interval: 2h
+
+    # Kubernetes alerts
+    - match:
+        alertname: KubernetesPodNotReady
+      receiver: 'kubernetes'
+      repeat_interval: 1h
+
+receivers:
+  # Default receiver - Slack
+  - name: 'default'
+    slack_configs:
+      - channel: '#devops-alerts'
+        title: 'Alert: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+        color: '{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}'
+
+  # Critical alerts - Slack + Email
+  - name: 'critical'
+    slack_configs:
+      - channel: '#critical-alerts'
+        title: '🚨 CRITICAL: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+        color: 'danger'
+    email_configs:
+      - to: 'devops-team@example.com'
+        from: 'alertmanager@example.com'
+        smarthost: 'smtp.gmail.com:587'
+        auth_username: 'your-email@gmail.com'
+        auth_password: 'your-app-password'
+        headers:
+          Subject: '🚨 CRITICAL ALERT: {{ .GroupLabels.alertname }}'
+
+  # Warning alerts - Slack only
+  - name: 'warning'
+    slack_configs:
+      - channel: '#devops-warnings'
+        title: '⚠️ WARNING: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+        color: 'warning'
+
+  # Jenkins alerts
+  - name: 'jenkins'
+    slack_configs:
+      - channel: '#jenkins-alerts'
+        title: '🔨 Jenkins Alert: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+
+  # SonarQube alerts
+  - name: 'sonarqube'
+    slack_configs:
+      - channel: '#code-quality'
+        title: '📊 SonarQube Alert: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+
+  # Kubernetes alerts
+  - name: 'kubernetes'
+    slack_configs:
+      - channel: '#kubernetes-alerts'
+        title: '☸️ Kubernetes Alert: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+
+inhibit_rules:
+  # Don't send warning if critical is firing
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'dev', 'instance']
+
+  # Don't send info if warning is firing
+  - source_match:
+      severity: 'warning'
+    target_match:
+      severity: 'info'
+    equal: ['alertname', 'dev', 'instance']
