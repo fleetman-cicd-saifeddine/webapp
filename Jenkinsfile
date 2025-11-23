@@ -30,7 +30,7 @@ pipeline {
                     echo '========== STAGE: Build (Webapp) =========='
                     sh '''
                         echo "Building webapp application..."
-                        which npm || (curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && apt-get install -y nodejs)
+                        which npm || (curl -fsSL https://deb.nodesource.com/setup_18.x | sudo bash - && sudo apt-get install -y nodejs)
                         npm install
                         echo "Build completed"
                     '''
