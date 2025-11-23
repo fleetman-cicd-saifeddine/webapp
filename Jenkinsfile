@@ -6,7 +6,7 @@ pipeline {
     environment {
         DOCKER_REGISTRY = 'docker.io'
         // DOCKER_CREDENTIALS = credentials('docker-credentials')
-        KUBECONFIG = '/root/.kube/config'
+        KUBECONFIG = '/var/jenkins_home/.kube/config'
         NAMESPACE = 'default'
         SERVICE_NAME = 'webapp'
     }
