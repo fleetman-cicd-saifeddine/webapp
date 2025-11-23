@@ -1,7 +1,12 @@
 def commit_id
 
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'node:18'
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
+        }
+    }
     
     environment {
         DOCKER_REGISTRY = 'docker.io'
@@ -30,7 +35,6 @@ pipeline {
                     echo '========== STAGE: Build (Webapp) =========='
                     sh '''
                         echo "Building webapp application..."
-                        which npm || (apt-get update && apt-get install -y curl && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && apt-get install -y nodejs)
                         npm install
                         echo "Build completed"
                     '''
