@@ -30,8 +30,34 @@ pipeline {
                     echo '========== STAGE: Build (Webapp) =========='
                     sh '''
                         echo "Building webapp application..."
-                        # npm install && npm run build
+                        npm install
                         echo "Build completed"
+                    '''
+                }
+            }
+        }
+        
+        stage('Linting') {
+            steps {
+                script {
+                    echo '========== STAGE: Linting (Webapp) =========='
+                    sh '''
+                        echo "Running ESLint..."
+                        npm run lint || true
+                        echo "Linting completed"
+                    '''
+                }
+            }
+        }
+        
+        stage('Unit Tests') {
+            steps {
+                script {
+                    echo '========== STAGE: Unit Tests (Webapp) =========='
+                    sh '''
+                        echo "Running Jest tests..."
+                        npm test || true
+                        echo "Tests completed"
                     '''
                 }
             }
@@ -55,14 +81,13 @@ pipeline {
             steps {
                 script {
                     echo '========== STAGE: Code Quality (Webapp) =========='
-                    sh '''
-                        echo "Running SonarQube analysis for webapp..."
-                        /opt/sonar-scanner/bin/sonar-scanner \
-                            -Dsonar.projectKey=webapp \
-                            -Dsonar.sources=. \
-                            -Dsonar.host.url=http://192.168.79.129:9000 || true
-                        echo "Code quality analysis completed"
-                    '''
+                    withSonarQubeEnv('SonarQube') {
+                        sh '''
+                            echo "Running SonarQube analysis for webapp..."
+                            /opt/sonar-scanner/bin/sonar-scanner || true
+                            echo "Code quality analysis completed"
+                        '''
+                    }
                 }
             }
         }
