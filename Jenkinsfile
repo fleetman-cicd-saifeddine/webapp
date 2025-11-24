@@ -116,7 +116,7 @@ pipeline {
         always {
             script {
                 echo "Pipeline execution completed"
-                currentBuild.description = "SonarQube: <a href='${SONARQUBE_URL}'>View Analysis</a>"
+                currentBuild.description = "SonarQube: ${SONARQUBE_URL}"
             }
         }
         success {
