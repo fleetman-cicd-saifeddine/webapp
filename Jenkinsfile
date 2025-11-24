@@ -9,6 +9,7 @@ pipeline {
         KUBECONFIG = '/var/jenkins_home/.kube/config'
         NAMESPACE = 'default'
         SERVICE_NAME = 'webapp'
+        SONARQUBE_URL = 'http://192.168.79.129:9000'
     }
     
     stages {
@@ -113,7 +114,11 @@ pipeline {
     
     post {
         always {
-            echo "Pipeline execution completed"
+            script {
+                echo "Pipeline execution completed"
+                // Add SonarQube link to build description
+                currentBuild.description = "🔗 <a href='${SONARQUBE_URL}'>View SonarQube Analysis</a>"
+            }
         }
         success {
             echo "✅ Webapp pipeline succeeded"
