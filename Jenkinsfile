@@ -116,7 +116,6 @@ pipeline {
         always {
             script {
                 echo "Pipeline execution completed"
-                currentBuild.description = "SonarQube: ${SONARQUBE_URL}"
             }
         }
         success {
